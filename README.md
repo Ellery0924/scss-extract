@@ -29,8 +29,10 @@ var resolve = {
         'Flux': '/src/lib/'
      }
 };
+// 忽略列表, 可以忽略一些不可能存在scss引用的目录, 缺省值就是下面的正则
+var ignore= /react|react-dom|yo-router|hysdk/;
 
-console.log(scssExtract(entrance, resolve, cwd));
+console.log(scssExtract(entrance, resolve, cwd, ignore));
 
 ```
 

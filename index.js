@@ -5,8 +5,11 @@ const rimport = /^import.*(['"])([^'"]+)\1/;
 const rrequire = /require\s*\((['"])([^'"]+)\1\)/;
 const rignore = /react|react-dom|yo-router|hysdk/;
 
-function getScssDependencies(entrance, resolve, context) {
+function getScssDependencies(entrance, resolve, context, ignore) {
     if (fs.existsSync(entrance)) {
+        if (!ignore) {
+            ignore = rignore;
+        }
         const allLines = fs.readFileSync(entrance, 'utf8').split(/[\n\r;]+/);
         let scssDeps = [];
 
@@ -18,7 +21,7 @@ function getScssDependencies(entrance, resolve, context) {
 
             if (mimport) {
                 const importPath = mimport[2];
-                if (importPath.match(rignore) === null) {
+                if (importPath.match(ignore) === null) {
                     const absImportPath = getAbsImportPath(entrance, importPath, resolve, context);
                     // 如果是scss, 直接push
                     if (isScssFile(absImportPath)) {
@@ -126,8 +129,8 @@ function group(arr) {
     return ret;
 }
 
-function extractAllScssDependencies(entrance, resolve, context) {
-    return group(getScssDependencies(entrance, resolve, context));
+function extractAllScssDependencies(entrance, resolve, context, ignore) {
+    return group(getScssDependencies(entrance, resolve, context, ignore));
 }
 
 module.exports = extractAllScssDependencies;
