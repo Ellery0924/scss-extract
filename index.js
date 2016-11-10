@@ -7,7 +7,7 @@ const rignore = /react|react-dom|yo-router|hysdk/;
 
 function getScssDependencies(entrance, resolve, context) {
     if (fs.existsSync(entrance)) {
-        const allLines = fs.readFileSync(entrance, 'utf8').split(/[\n\r]+/);
+        const allLines = fs.readFileSync(entrance, 'utf8').split(/[\n\r;]+/);
         let scssDeps = [];
 
         allLines.forEach((line)=> {
