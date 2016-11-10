@@ -1,5 +1,5 @@
 {
-  "name": "scss-extract",
+  "name": "@qnpm/scss-extract",
   "version": "1.0.0",
   "description": "从js里提取scss依赖并去重",
   "main": "index.js",
