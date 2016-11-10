@@ -20,9 +20,10 @@ function getScssDependencies(entrance, resolve, context) {
                 const importPath = mimport[2];
                 if (importPath.match(rignore) === null) {
                     const absImportPath = getAbsImportPath(entrance, importPath, resolve, context);
+                    // 如果是scss, 直接push
                     if (isScssFile(absImportPath)) {
                         scssDeps.push(absImportPath);
-                    } else {
+                    } else { // 否则递归查找js依赖中的scss依赖
                         scssDeps = scssDeps.concat(getScssDependencies(absImportPath, resolve, context));
                     }
                 }
@@ -39,9 +40,8 @@ function getAbsImportPath(entrance, importPath, resolve, context) {
         importPath = Path.resolve(context, 'node_modules', importPath.slice(1));
     }
     let ret = importPath;
-
     // 替换alias, 只替换业务代码中的别名
-    const alias = resolve.alias;
+    const alias = resolve.alias || {};
     const aliasFound = Object.keys(alias).find(key=> {
         return importPath.split('/').some(dirname=> {
             return dirname === key;
@@ -57,7 +57,7 @@ function getAbsImportPath(entrance, importPath, resolve, context) {
             importPath = importPath.replace(aliasFound, aliasContent);
         }
     }
-    //优先尝试node_modules
+    // 优先尝试node_modules
     const nodeModule = tryLoadNodeModules(context, importPath);
     if (nodeModule) {
         ret = nodeModule;
@@ -73,14 +73,16 @@ function tryLoadNodeModules(context, dirname) {
     const packageJsonPath = Path.resolve(dirname, 'package.json');
     try {
         let main = 'index.js';
+        // 如果找到了package.json,说明是一个npm的包
         if (fs.existsSync(packageJsonPath)) {
             const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+            // 获取包的入口,默认是index.js
             main = packageJson.main || 'index.js';
             const ret = tryEveryExtname(Path.resolve(dirname, main));
             if (ret && fs.existsSync(ret)) {
                 return ret;
             }
-        } else {
+        } else { // 反之,是npm包内部的一个文件
             const ret = tryEveryExtname(Path.resolve(dirname));
             if (ret && fs.existsSync(ret)) {
                 return ret;
@@ -111,11 +113,7 @@ function tryEveryExtname(path) {
 }
 
 function isScssFile(absPath) {
-    const ext = Path.extname(absPath);
-    if (ext === '.scss') {
-        return true;
-    }
-    return false;
+    return Path.extname(absPath) === '.scss';
 }
 
 function group(arr) {
