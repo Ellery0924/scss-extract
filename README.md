@@ -1,15 +1,15 @@
-# 简介
+## 简介
 
 scss-extract是一个工具函数, 可以通过一个入口js递归地查找js内部引用的scss文件,
 并按引用的顺序输出一个scss路径(绝对路径)列表。
 
-# 安装
+## 安装
 
 ```
 npm install --save @qnpm/scss-extract
 ```
 
-# 使用
+## 使用
 
 ```
 var Path = require('path');
@@ -34,7 +34,7 @@ console.log(scssExtract(entrance, resolve, cwd));
 
 ```
 
-# 输出示例
+## 输出示例
 
 ```
 [ '/Users/Ellery1/Documents/qunarzz2.com/psapproval/src/page/approval/detail/index.scss',
