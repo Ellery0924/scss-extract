@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('fs');
 const Path = require('path');
-const rimport = /^import.*(['"])([^'"]+)\1/;
+const rimport = /^@?import.*(['"])([^'"]+)\1/;
 const rrequire = /require\s*\((['"])([^'"]+)\1\)/;
 const rignore = /react|react-dom|yo-router|hysdk/;
 
@@ -10,7 +10,8 @@ function getScssDependencies(entrance, resolve, context, ignore) {
         if (!ignore) {
             ignore = rignore;
         }
-        const allLines = fs.readFileSync(entrance, 'utf8').split(/[\n\r;]+/);
+        const content = fs.readFileSync(entrance, 'utf8');
+        const allLines = content.split(/[\n\r;]+/);
         let scssDeps = [];
 
         allLines.forEach((line)=> {
@@ -25,7 +26,8 @@ function getScssDependencies(entrance, resolve, context, ignore) {
                     const absImportPath = getAbsImportPath(entrance, importPath, resolve, context);
                     // 如果是scss, 直接push
                     if (isScssFile(absImportPath)) {
-                        scssDeps.push(absImportPath);
+                        scssDeps = scssDeps.concat(getScssDependencies(absImportPath, resolve, context, ignore));
+                        scssDeps.push(absImportPath)
                     } else { // 否则递归查找js依赖中的scss依赖
                         scssDeps = scssDeps.concat(getScssDependencies(absImportPath, resolve, context));
                     }
@@ -54,11 +56,7 @@ function getAbsImportPath(entrance, importPath, resolve, context) {
     const isBizFolder = entrance.search('node_modules') === -1;
 
     if (aliasFound && isBizFolder) {
-        if (Path.isAbsolute(aliasContent)) {
-            importPath = importPath.replace(aliasFound, Path.join(context, aliasContent));
-        } else {
-            importPath = importPath.replace(aliasFound, aliasContent);
-        }
+        importPath = importPath.replace(aliasFound, aliasContent);
     }
     // 优先尝试node_modules
     const nodeModule = tryLoadNodeModules(context, importPath);
@@ -133,4 +131,16 @@ function extractAllScssDependencies(entrance, resolve, context, ignore) {
     return group(getScssDependencies(entrance, resolve, context, ignore));
 }
 
-module.exports = extractAllScssDependencies;
+function combine(entrance, resolve, context, ignore) {
+    let ret = '';
+    const deps = extractAllScssDependencies(entrance, resolve, context, ignore);
+    deps.forEach(dep=> {
+        let content = fs.readFileSync(dep, 'utf8');
+        ret += content
+            .replace(/@import\s+(['"])[^'"]+\1;/g, '')
+            .replace(/@charset\s+(['"])[^'"]+\1;/g, '')
+    });
+    return ret;
+}
+
+module.exports = combine;
