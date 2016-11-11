@@ -47,8 +47,8 @@ function getAbsImportPath(entrance, importPath, resolve, context) {
     var ret = importPath;
     // 替换alias, 只替换业务代码中的别名
     var alias = resolve.alias || {};
-    var aliasFound = Object.keys(alias).find(function(key) {
-        return importPath.split('/').some(function(dirname) {
+    var aliasFound = Object.keys(alias).find(function (key) {
+        return importPath.split('/').some(function (dirname) {
             return dirname === key;
         });
     });
@@ -131,16 +131,35 @@ function extractAllScssDependencies(entrance, resolve, context, ignore) {
     return group(getScssDependencies(entrance, resolve, context, ignore));
 }
 
+function removeRedundantCode(importList) {
+    var ret = '';
+    var deps = [];
+    importList.split(/[\n\r;]/).forEach(function (importStmt) {
+        var rimp = /@import\s+(['"])([^'"]+)\1;?/;
+        var m = importStmt.match(rimp);
+        if (m) {
+            var dep = m[2];
+            deps.push(dep);
+            var content = fs.readFileSync(dep, 'utf8');
+            ret += content
+                .replace(/@import\s+(['"])[^'"]+\1;?/g, '')
+                .replace(/@charset\s+(['"])[^'"]+\1;?/g, '')
+        }
+    });
+    return { code: ret, deps: deps };
+}
+
 function combine(entrance, resolve, context, ignore) {
     var ret = '';
     var deps = extractAllScssDependencies(entrance, resolve, context, ignore);
-    deps.forEach(function(dep) {
+    deps.forEach(function (dep) {
         var content = fs.readFileSync(dep, 'utf8');
         ret += content
             .replace(/@import\s+(['"])[^'"]+\1;?/g, '')
             .replace(/@charset\s+(['"])[^'"]+\1;?/g, '')
     });
-    return ret;
+    return { code: ret, deps: deps };
 }
 
 module.exports = combine;
+module.exports.removeRedundantCode = removeRedundantCode;
