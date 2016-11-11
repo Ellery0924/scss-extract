@@ -137,8 +137,8 @@ function combine(entrance, resolve, context, ignore) {
     deps.forEach(dep=> {
         let content = fs.readFileSync(dep, 'utf8');
         ret += content
-            .replace(/@import\s+(['"])[^'"]+\1;/g, '')
-            .replace(/@charset\s+(['"])[^'"]+\1;/g, '')
+            .replace(/@import\s+(['"])[^'"]+\1;?/g, '')
+            .replace(/@charset\s+(['"])[^'"]+\1;?/g, '')
     });
     return ret;
 }
