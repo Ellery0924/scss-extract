@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/Ellery0924/scss-extract/issues"
   },
-  "homepage": "https://github.com/Ellery0924/scss-extract#readme"
+  "homepage": "https://github.com/Ellery0924/scss-extract#readme",
+  "dependencies": {
+    "babel-polyfill": "^6.16.0"
+  }
 }
