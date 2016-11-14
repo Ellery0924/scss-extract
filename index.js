@@ -1,4 +1,5 @@
 'use strict';
+require('babel-polyfill');
 var fs = require('fs');
 var Path = require('path');
 var rimport = /^@?import.*(['"])([^'"]+)\1/;
