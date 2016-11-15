@@ -30,7 +30,7 @@ function getScssDependencies(entrance, resolve, context, ignore) {
                         scssDeps = scssDeps.concat(getScssDependencies(absImportPath, resolve, context, ignore));
                         scssDeps.push(absImportPath)
                     } else { // 否则递归查找js依赖中的scss依赖
-                        scssDeps = scssDeps.concat(getScssDependencies(absImportPath, resolve, context));
+                        scssDeps = scssDeps.concat(getScssDependencies(absImportPath, resolve, context, ignore));
                     }
                 }
             }
@@ -132,24 +132,6 @@ function extractAllScssDependencies(entrance, resolve, context, ignore) {
     return group(getScssDependencies(entrance, resolve, context, ignore));
 }
 
-function removeRedundantCode(importList) {
-    var ret = '';
-    var deps = [];
-    importList.split(/[\n\r;]/).forEach(function (importStmt) {
-        var rimp = /@import\s+(['"])([^'"]+)\1;?/;
-        var m = importStmt.match(rimp);
-        if (m) {
-            var dep = m[2];
-            deps.push(dep);
-            var content = fs.readFileSync(dep, 'utf8');
-            ret += content
-                .replace(/@import\s+(['"])[^'"]+\1;?/g, '')
-                .replace(/@charset\s+(['"])[^'"]+\1;?/g, '')
-        }
-    });
-    return { code: ret, deps: deps };
-}
-
 function combine(entrance, resolve, context, ignore) {
     var ret = '';
     var deps = extractAllScssDependencies(entrance, resolve, context, ignore);
@@ -163,4 +145,3 @@ function combine(entrance, resolve, context, ignore) {
 }
 
 module.exports = combine;
-module.exports.removeRedundantCode = removeRedundantCode;
