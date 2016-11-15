@@ -58,6 +58,7 @@ function getAbsImportPath(entrance, importPath, resolve, context) {
 
     if (aliasFound && isBizFolder) {
         importPath = importPath.replace(aliasFound, aliasContent);
+        console.log(aliasFound, importPath);
     }
     // 优先尝试node_modules
     var nodeModule = tryLoadNodeModules(context, importPath);
