@@ -139,7 +139,7 @@ function combine(entrance, resolve, context, ignore) {
         var content = fs.readFileSync(dep, 'utf8');
         ret += content
             .replace(/@import\s+(['"])[^'"]+\1;?/g, '')
-            .replace(/@charset\s+(['"])[^'"]+\1;?/g, '')
+            .replace(/@charset\s+(['"])[^'"]+\1;?/g, '');
     });
     return { code: ret, deps: deps };
 }
