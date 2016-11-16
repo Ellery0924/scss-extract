@@ -58,7 +58,6 @@ function getAbsImportPath(entrance, importPath, resolve, context) {
 
     if (aliasFound && isBizFolder) {
         importPath = importPath.replace(aliasFound, aliasContent);
-        console.log(aliasFound, importPath);
     }
     // 优先尝试node_modules
     var nodeModule = tryLoadNodeModules(context, importPath);
@@ -133,6 +132,24 @@ function extractAllScssDependencies(entrance, resolve, context, ignore) {
     return group(getScssDependencies(entrance, resolve, context, ignore));
 }
 
+function removeRedundantCode(importList) {
+    var ret = '';
+    var deps = [];
+    importList.split(/[\n\r;]/).forEach(function (importStmt) {
+        var rimp = /@import\s+(['"])([^'"]+)\1;?/;
+        var m = importStmt.match(rimp);
+        if (m) {
+            var dep = m[2];
+            deps.push(dep);
+            var content = fs.readFileSync(dep, 'utf8');
+            ret += content
+                .replace(/@import\s+(['"])[^'"]+\1;?/g, '')
+                .replace(/@charset\s+(['"])[^'"]+\1;?/g, '')
+        }
+    });
+    return { code: ret, deps: deps };
+}
+
 function combine(entrance, resolve, context, ignore) {
     var ret = '';
     var deps = extractAllScssDependencies(entrance, resolve, context, ignore);
@@ -146,3 +163,4 @@ function combine(entrance, resolve, context, ignore) {
 }
 
 module.exports = combine;
+module.exports.removeRedundantCode = removeRedundantCode;
