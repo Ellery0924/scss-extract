@@ -7,38 +7,43 @@ var rrequire = /require\s*\((['"])([^'"]+)\1\)/;
 var rignore = /react|react-dom|yo-router|hysdk/;
 
 function getScssDependencies(entrance, resolve, context, ignore) {
-    if (fs.existsSync(entrance)) {
-        if (!ignore) {
-            ignore = rignore;
-        }
-        var content = fs.readFileSync(entrance, 'utf8');
-        var allLines = content.split(/[\n\r;]+/);
-        var scssDeps = [];
-
-        allLines.forEach(function (line) {
-            var mimport = line.match(rimport);
-            if (!mimport) {
-                mimport = line.match(rrequire);
+    try {
+        if (fs.existsSync(entrance)) {
+            if (!ignore) {
+                ignore = rignore;
             }
+            var content = fs.readFileSync(entrance, 'utf8');
+            var allLines = content.split(/[\n\r;]+/);
+            var scssDeps = [];
 
-            if (mimport) {
-                var importPath = mimport[2];
-                if (importPath.match(ignore) === null) {
-                    var absImportPath = getAbsImportPath(entrance, importPath, resolve, context);
-                    // 如果是scss, 直接push
-                    if (isScssFile(absImportPath)) {
-                        scssDeps = scssDeps.concat(getScssDependencies(absImportPath, resolve, context, ignore));
-                        scssDeps.push(absImportPath)
-                    } else { // 否则递归查找js依赖中的scss依赖
-                        scssDeps = scssDeps.concat(getScssDependencies(absImportPath, resolve, context, ignore));
+            allLines.forEach(function (line) {
+                var mimport = line.match(rimport);
+                if (!mimport) {
+                    mimport = line.match(rrequire);
+                }
+
+                if (mimport) {
+                    var importPath = mimport[2];
+                    if (importPath.match(ignore) === null) {
+                        var absImportPath = getAbsImportPath(entrance, importPath, resolve, context);
+                        // 如果是scss, 直接push
+                        if (isScssFile(absImportPath)) {
+                            scssDeps = scssDeps.concat(getScssDependencies(absImportPath, resolve, context, ignore));
+                            scssDeps.push(absImportPath)
+                        } else { // 否则递归查找js依赖中的scss依赖
+                            scssDeps = scssDeps.concat(getScssDependencies(absImportPath, resolve, context, ignore));
+                        }
                     }
                 }
-            }
-        });
+            });
 
-        return scssDeps;
+            return scssDeps;
+        }
+        return [];
+    } catch (e) {
+        console.error('scss-extract:', 'compile ' + entrance + ' failed.');
+        throw e;
     }
-    return [];
 }
 
 function getAbsImportPath(entrance, importPath, resolve, context) {
