@@ -47,11 +47,12 @@ function getAbsImportPath(entrance, importPath, resolve, context) {
     var ret = importPath;
     // 替换alias, 只替换业务代码中的别名
     var alias = resolve.alias || {};
-    var aliasFound = Object.keys(alias).find(function (key) {
+    var aliasMatched = Object.keys(alias).filter(function (key) {
         return importPath.split('/').some(function (dirname) {
             return dirname === key;
         });
     });
+    var aliasFound = aliasMatched ? aliasMatched[0] : null;
     var aliasContent = alias[aliasFound];
     var isBizFolder = entrance.search('node_modules') === -1;
 
@@ -84,7 +85,7 @@ function tryLoadNodeModules(context, dirname) {
                 return ret;
             }
         } else { // 反之,是npm包内部的一个文件
-            var ret = tryEveryExtname(Path.resolve(dirname));
+            ret = tryEveryExtname(Path.resolve(dirname));
             if (ret && fs.existsSync(ret)) {
                 return ret;
             }
