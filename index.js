@@ -102,7 +102,17 @@ function tryLoadNodeModules(context, dirname) {
 }
 
 function tryEveryExtname(path) {
-    var extnames = ['.js', '.scss', '/index.js', '/index.scss', 'index.js', 'index.scss'];
+    var extnames = [
+        '.js',
+        '.scss',
+        '.css',
+        '/index.js',
+        '/index.scss',
+        '/index.css',
+        'index.js',
+        'index.scss',
+        'index.css'
+    ];
     var existedExt = Path.extname(path);
     if (existedExt) {
         return path;
@@ -120,7 +130,8 @@ function tryEveryExtname(path) {
 }
 
 function isScssFile(absPath) {
-    return Path.extname(absPath) === '.scss';
+    var extName = Path.extname(absPath);
+    return extName === '.css' || extName === '.scss';
 }
 
 function group(arr) {
