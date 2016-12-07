@@ -5,19 +5,24 @@
 'use strict';
 var fs = require('fs');
 var Path = require('path');
-var rimport = /@?import.*(['"])([^'"]+)\1/;
+var rimport = /@?import.*(?:(['"])([^'"]+)\1|url\((['"]?)([^)'"]+)\3\))/;
 var rrequire = /require(?:\.async)?\s*\((['"])([^'")]+)\1\)/;
 var rignore = /react|react-dom|yo-router|hysdk|babel-polyfill/;
+var rscsspackage = /yo3|@qnpm\/yo/;
 var rpossibleScssFileName = /([^\/]+\.scss)$/;
 var rsinglelineComment = /\/\/.*(?:[\n\r]|$)/g;
 var rmultilineComment = /\/\s*\*(?:(?!(\*\s*\/)).|[\n\r])*(?:\*\s*\/)/g;
 
-function getScssDependencies(entrance, resolve, context, ignore) {
+function isIgnored(abspath, rscsspackage) {
+    return abspath && abspath.match(/node_modules/) && !abspath.match(rscsspackage);
+}
+
+function getScssDependencies(entrance, resolve, context, scsspackage) {
+    if (!scsspackage) {
+        scsspackage = rscsspackage;
+    }
     var entranceExist = fs.existsSync(entrance);
     if (entranceExist) {
-        if (!ignore) {
-            ignore = rignore;
-        }
         var content = fs.readFileSync(entrance, 'utf8')
             .replace(rsinglelineComment, '')
             .replace(rmultilineComment, '');
@@ -31,9 +36,9 @@ function getScssDependencies(entrance, resolve, context, ignore) {
             }
 
             if (mimport) {
-                var importPath = mimport[2];
+                var importPath = mimport[2] || mimport[4];
                 var absImportPath = getAbsImportPath(entrance, importPath, resolve, context);
-                if (absImportPath.match(ignore) === null) {
+                if (!isIgnored(absImportPath, scsspackage)) {
                     // 如果是scss, 直接push
                     if (isScssFile(absImportPath)) {
                         // 尝试匹配以下划线开头的文件名
@@ -47,10 +52,10 @@ function getScssDependencies(entrance, resolve, context, ignore) {
                             absImportPath = alterEntrance;
                         }
 
-                        scssDeps = scssDeps.concat(getScssDependencies(absImportPath, resolve, context, ignore));
+                        scssDeps = scssDeps.concat(getScssDependencies(absImportPath, resolve, context, scsspackage));
                         scssDeps.push(absImportPath)
                     } else { // 否则递归查找js依赖中的scss依赖
-                        scssDeps = scssDeps.concat(getScssDependencies(absImportPath, resolve, context));
+                        scssDeps = scssDeps.concat(getScssDependencies(absImportPath, resolve, context, scsspackage));
                     }
                 }
             }
@@ -86,6 +91,18 @@ function getAbsImportPath(entrance, importPath, resolve, context) {
         ret = nodeModule;
     } else { // 最后尝试普通module
         ret = Path.resolve(Path.dirname(entrance), importPath);
+        // 如果ret不存在，看看是不是fekit_modules里面的css
+        if (Path.extname(entrance).match(/css/)) {
+            if (!Path.isAbsolute(importPath) && !fs.existsSync(ret)) {
+                var fekitPath = Path.resolve(context, 'fekit_modules');
+                if (fs.existsSync(fekitPath)) {
+                    var alternative = Path.resolve(fekitPath, importPath, 'src', 'index.css');
+                    if (fs.existsSync(alternative)) {
+                        ret = alternative;
+                    }
+                }
+            }
+        }
     }
 
     return tryEveryExtname(ret);
@@ -189,13 +206,24 @@ function removeRedundantCode(importList) {
 function combine(entrance, resolve, context, ignore) {
     var ret = '';
     var deps = extractAllScssDependencies(entrance, resolve, context, ignore);
+    if (Path.extname(entrance).match(/scss|css/) && deps.indexOf(entrance) === -1) {
+        deps.push(entrance);
+    }
     deps.forEach(function (dep) {
         var content = fs.readFileSync(dep, 'utf8');
         ret += content
-            .replace(/@import\s+(?:url\()?(['"])[^'"]+\1(?:\))?;?/g, '')
+            .replace(/@import\s+(?:url)?(?:(['"])[^'"]+\1;?|\([^)]+\));?/g, '')
+            .replace(/require\s*\([^)]+\);?/g, '')
             .replace(/@charset\s+(['"])[^'"]+\1;?/g, '');
     });
-    return { code: ret, deps: deps };
+    var isCss = deps.reduce(function (ret, dep) {
+        if (dep.match(/\.scss$/)) {
+            ret = false;
+        }
+        return ret;
+    }, true);
+
+    return { code: ret, deps: deps, isCss: isCss };
 }
 
 module.exports = combine;
